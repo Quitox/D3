@@ -16,17 +16,36 @@ h1{
     text-decoration: underline;
     color: grey;
 }
+#requerimiento{
+    margin: 2rem;
+}
+#grafico-contenedor{
+    position: relative;
+
+}
 
 #grafico-svg{
     color: blue;
-    /*
-    width: 80vw;
-    height : 50vh;
-    */ 
     overflow-y : scroll;
     border: 1px solid grey;
     margin: 5px 0;
     padding:2px;
-    no-background: linear-gradient(0deg, green, white);
+    z-index: 900;
     
+}
+
+.svg-bar:hover{
+    /* background: aqua; */
+    fill: aqua; /*esta propiedad sobreescribe a background - SGV*/
+}
+
+#tooltip{
+    position: relative;
+    background-color: red;
+    /* top: -100px; */
+    min-width: 8rem;
+    min-height: 3rem;
+    text-align: center;
+    padding: .2rem 0;
+
 }

@@ -1,118 +1,198 @@
-//import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 const lista = document.querySelector("section#datos > ol");
 
 const url = "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json";
 
-//let dataset;
-
 const graficar = (dataset) => {
+  try{
+  
+    /**************************************************
+     * Data
+    ***************************************************/
 
-//const w = window.innerWidth * .80
-//const h = window.innerHeight * .80
+  // Specify the chart’s dimensions.
+    const width = 900 / 1.2;
+    const height = 500 / 1.2;
+    const marginTop = 30;
+    const marginRight = 0;
+    const marginBottom = 30;
+    const marginLeft = 50;
+    const cantidad = dataset.length;
+    const zonaGrafX = width - marginLeft - marginRight;
+    const zonaGrafY = height - marginBottom - marginTop;
+    const barWidth = (zonaGrafX - marginLeft) / cantidad;
 
-// Specify the chart’s dimensions.
-const width = 928/1.5;
-const height = 500/1.5;
-const marginTop = 20;
-const marginRight = 0;
-const marginBottom = 30;
-const marginLeft = 50;
-const cantidad = dataset.length
-const zonaGraf = width-marginLeft-marginRight;
-const barWidth = (zonaGraf)/cantidad
-
-//console.log("barWidth = " + barWidth );
-
-// Procesamiento de datos
-const fechas = dataset.map(x => {
-    const fecha = new Date(x[0])
-    const dia = 1;
-    return new Date(fecha.setDate(fecha.getDate() + dia));
-});
-const montos = dataset.map(x => x[1]);
-//console.log(fechas)
-//console.log(montos)
-
-// Create scale
-const x_min = d3.min(fechas);
-const x_max = d3.max(fechas);
-
-const y_min = 0; //d3.min(montos);
-const y_max = d3.max(montos);
-
-const xScale = d3.scaleUtc()
-    .domain([x_max, x_min])
-    .range([marginLeft, width-marginLeft]);
-
-const yScale = d3.scaleLinear()
-    .domain([y_max, y_min])
-    .range([marginBottom, (height - marginBottom)]);
-
-console.log("------------Domain------------")
-console.log("X min : "+ xScale(x_min))
-console.log("X max : "+ xScale(x_max))
-console.log("Y min : "+ yScale(y_min))
-console.log("Y max : "+ yScale(y_max))
-
-// Add a SVG element
-const svg = d3.select("#grafico")
-.append("svg")
-.attr("id", "grafico-svg")
-.attr("width", width)
-.attr("height", height)
-.style("background", `linear-gradient(0deg, white ${marginBottom-5}px , green ${marginBottom-10}px, white)`);
+    const x_min = new Date(d3.min(dataset, d => d[0])); //console.log(x_min);
+    const x_max = new Date(d3.max(dataset, d => d[0])); //console.log(x_max);
+    // console.log("   -> Y") // Montos
+    const y_min = d3.min(dataset, d => d[1]); //console.log(y_min);
+    const y_max = d3.max(dataset, d => d[1]); //console.log(y_max);
 
 
-// Add the x-axis.
-const xAxis = d3.axisBottom(xScale);
+    /**************************************************
+     * Scale
+    ***************************************************/
 
-svg.append("g")
-.attr("transform", `translate(0,${height - marginBottom})`)
-.call(xAxis);
+    const xScale = d3.scaleTime()
+        .domain([
+            x_min,
+            x_max
+        ]) // Time
+        .range([marginLeft, zonaGrafX]) //Pixels
+    // zonaGrafX
 
-// Add the y-axis.
-const yAxis = d3.axisLeft(yScale);
+    const yScale = d3.scaleLinear()
+        .domain([
+            y_max, 0
+        ]) // Montos
+        .range([marginBottom, (height - marginBottom)]); // Pixels
 
-svg.append("g")
-.attr("transform", `translate(${marginLeft}, 0)`)
-.style("fill", `white`)
-.call(yAxis);
+    /**************************************************
+     * SVG Element
+    ***************************************************/
 
-console.log(montos)
+    // Add a SVG element
+    const svg = d3.select("#grafico-contenedor")
+        .append("svg")
+        .attr("id", "grafico-svg")
+        .attr("width", width)
+        .attr("height", height)
+        .style("background", "#ddd");
 
-console.log(montos.map(x=>yScale(x)))
+    /**************************************************
+     * Axis
+    ***************************************************/
+    // Add the x-axis.
+    const xAxis = d3.axisBottom().scale(xScale);
 
-// Data - Bar element
-svg.selectAll("rect")
-    .data(montos)
-    .enter()
-    .append("rect")
-    .attr("data-date", (d,i)=> fechas[i])
-    .attr("data-monto", (d,i)=> montos[i])
-    .attr("x", (d,i) => marginLeft + i*barWidth)
-    .attr("y", (d,i) => 0)//height - marginBottom - yScale(d))
-    .attr("width", barWidth)
-    .attr("height", (d) => yScale(d) )
-    .attr("fill", "navy")
+    svg.append("g")
+        .attr("transform", `translate(0,${height - marginBottom})`)
+        .style("fill", `white`)
+        .attr("id", "x-axis")
+        .call(xAxis)
+
+    // Add the y-axis.
+    const yAxis = d3.axisLeft(yScale).ticks(20);
+
+    svg.append("g")
+        .attr("transform", `translate(${marginLeft}, 0)`)
+        .style("fill", `white`)
+        .attr("id", "y-axis")
+        .call(yAxis)
+
+    /**************************************************
+    * Tooltip
+    ***************************************************/
+    // Agrega un div dentro de #grafico-contenedor despues del elemento SVG  
+
+    var tooltip = d3.select("#grafico-contenedor")
+        .append("div")
+        .attr("id", "tooltip") //id css => #tooltip 
+        .style("opacity", 0) //Invisible
+        .style("background-color", "white")
+        .style("border", "solid")
+        .style("border-width", "2px")
+        .style("border-radius", "5px")
+        .style("padding", "5px")
+        .style("z-index", "10000")
+        .style("position", "absolute")
+        .style("top", (height*.1)+"px")
+        .style("left", (width*.1)+"px")
+
+    /**************************************************
+     * Bars
+    ***************************************************/
+
+    // Data - Bar element
+    const bar = svg.selectAll("rect")
+        .data(dataset)
+        .enter()
+        .append("rect")
+        .attr("class", "svg-bar bar")
+        // Meta data
+        .attr("data-date", (d, i) => d[0])
+        .attr("data-gdp", (d, i) => d[1])
+        // Ubic X y Anchura
+        .attr("x", (d, i) => marginLeft + i * barWidth)
+        .attr("width", barWidth)
+        // Ubic y y Altura
+        /* attr "y" representa la UBICACIÓN
+            Se utilza a el dato de referecia Y con yScale() para referenciar el valor del dato al de la escala Y... Como la escala Y esta invertida, el dato escalado en valores pequeños da casi todo el valor de h... Lo que resulta en el valor negativo del grafico que queremos quede despejado arriba
+        */
+        .attr("y", (d, i) => {
+            const monedaEscalada = yScale(d[1]);
+            return monedaEscalada
+        })
+        /* attr "height" representa la altura a dibujarse la barra hacia abajo.
+            Así similar al attr Y, por el tema de la escala Y invertida, al restar al Height total la altura de la barra escalada (yScale(dato)) esto genera un estacio que por negativa termina ciendo la altura de la barra.
+        */
+        .attr("height", (d, i) => height - marginBottom - yScale(d[1]))
+        .attr("fill", "navy")
+
+    /**************************************************
+     * Bars - Events
+    ***************************************************/
+
+const mouseover = function (d) {
+  //console.log(d)
+            tooltip
+                .attr("data-date", d[0])
+                .style("opacity", 1)
+                .html(`<p><strong>GDP</strong>: <span id="tip-gpd">${d[0]}</span></p><p><strong>Date</strong>: <span id="tip-date">${d[1]}</span></p>`)
+        }
+
+const mousemove = function (d) {
+            tooltip
+                .html(`<p><strong>GDP</strong>: <span id="tip-gpd">${d[0]}</span></p><p><strong>Date</strong>: <span id="tip-date">${d[1]}</span></p>`)
+                .style("opacity", 1)
+                .style("left", (xScale(new Date(this.__data__[0])) + 20) + "px")
+                .style("top", (height * .8) + "px")
+        }
+ const mouseleave = function (d) {
+            tooltip
+                .style("opacity", 0)
+        }
+
+    d3.selectAll(".bar")
+        //remplan a addEnventListener()
+        .on("mouseover", mouseover) //hover
+        .on("mousemove", mousemove) //move
+        .on("mouseleave", mouseleave) //leave
+
+
+    /**************************************************
+     * Titulo
+    ***************************************************/
+    svg
+        .append("text")
+        .attr("x", ".7rem")
+        .attr("y", "1rem")
+        .attr("style", "transform: translateX(50)")
+        .attr("id", "title")
+        .text("Graf GDP USA 1950-2015")
+        .attr("style", "fill: lightgreen; stroke: black")
+  
+     } catch (error) {
+        alert("Error: " + error )
+    }
 }
 
-function inicio(url){
+function inicio(url) {
 
-    fetch(url)
+  fetch(url)
         .then(datos => datos.json())
         .then(jsonData => {
-            
+
             const datos = jsonData.data;
-            
-            graficar(datos);
-            
+
             datos.forEach(x => {
-                
+
                 lista.innerHTML += `<li>Fecha: ${x[0]} | Monto: ${x[1]}</li>`;
-                
+
             });
-            
+
+            graficar(datos);
+
         }).catch((err) => console.log(err))
 
 }
